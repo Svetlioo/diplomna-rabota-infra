@@ -9,3 +9,9 @@ variable "chart_version" {
   type        = string
   default     = "9.5.14"
 }
+
+variable "reconciliation_timeout_seconds" {
+  description = "How often ArgoCD reconciles Applications against Git. Chart default is 180s."
+  type        = number
+  default     = 30
+}
