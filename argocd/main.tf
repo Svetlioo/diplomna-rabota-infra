@@ -10,4 +10,14 @@ resource "helm_release" "argocd" {
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
   version    = var.chart_version
+
+  values = [
+    yamlencode({
+      configs = {
+        cm = {
+          "timeout.reconciliation" = "${var.reconciliation_timeout_seconds}s"
+        }
+      }
+    })
+  ]
 }
