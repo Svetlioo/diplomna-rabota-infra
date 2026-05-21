@@ -38,8 +38,8 @@ variable "environments" {
     database = string
   }))
   default = {
-    dev  = { database = "account_dev" }
-    test = { database = "account_test" }
-    prod = { database = "account_prod" }
+    dev  = { database = "bank_dev" }
+    test = { database = "bank_test" }
+    prod = { database = "bank_prod" }
   }
 }
