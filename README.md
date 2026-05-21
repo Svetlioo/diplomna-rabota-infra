@@ -1,19 +1,36 @@
 # diplomna-rabota-infra
 
-Terraform infrastructure for the diploma project ([diplomna-rabota](https://github.com/Svetlioo/diplomna-rabota)).
+Terraform инфраструктура за дипломната ([diplomna-rabota](https://github.com/Svetlioo/diplomna-rabota)).
+Осигурява Azure ресурсите, които хостват приложението: shared foundation, AKS клъстер,
+бази данни и cluster controllers (ArgoCD, Kyverno).
 
-Provisions Azure resources hosting the containerized banking demo: shared foundation (resource group + remote state storage) and the AKS cluster.
+## Модули
 
-## Modules
-
-| Module | Purpose |
+| Модул | Предназначение |
 |---|---|
-| [`shared/`](./shared) | Resource group + Storage Account holding Terraform remote state for all other modules. Bootstrap only — its own state stays local. |
-| [`aks/`](./aks) | Azure Kubernetes Service cluster. State stored remotely in the storage account created by `shared/`. |
+| [`shared/`](./shared) | Resource group + Storage Account за **remote state** на всички други модули. Само bootstrap — собственият му state остава локален. |
+| [`aks/`](./aks) | Azure Kubernetes Service клъстер. State в storage-а от `shared/`. |
+| [`data/`](./data) | PostgreSQL flexible server + по една база на среда (`bank_dev/test/prod`) и Kubernetes secret `bank-service-db` (DB креденшъли + `JWT_SECRET`) на среда. |
+| [`argocd/`](./argocd) | Инсталира ArgoCD в клъстера (GitOps reconciler — pull-ва от `diplomna-rabota-gitops`). |
+| [`kyverno/`](./kyverno) | Инсталира Kyverno (admission control — проверка на Cosign подписи). |
+| [`scripts/`](./scripts) | `aks-start.sh` / `aks-stop.sh` — спиране/пускане на клъстера (пестене на кредити). |
 
-## Order of apply
+## Ред на прилагане
 
-1. `shared/` — first, with local state, to create the remote state backend.
-2. `aks/` — uses the remote backend created above.
+1. **`shared/`** — първо, с локален state, за да създаде remote backend-а.
+2. **`aks/`** — ползва remote backend-а; създава клъстера.
+3. **`data/`**, **`argocd/`**, **`kyverno/`** — след клъстера (нужен е kube достъп).
 
-Each module has its own `README.md` with inputs, outputs, and apply instructions.
+Всеки модул има свой `README.md` с inputs, outputs и инструкции за apply.
+
+> Бележка: преименуване на DB име в `data/` (напр. `account_*` → `bank_*`) форсира
+> replace на базите/secret-ите — допустима загуба на данни в dev (Flyway пресъздава схемата при старт).
+
+## Свързани репозитории
+
+- **`diplomna-rabota`** — сорс на сервизите + CI/CD.
+- **`diplomna-rabota-gitops`** — desired state, който ArgoCD (инсталиран оттук) реконсилира.
+
+## Лиценз
+
+[Apache License 2.0](LICENSE)
