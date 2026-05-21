@@ -41,11 +41,11 @@ resource "azurerm_postgresql_flexible_server_database" "envs" {
   collation = "en_US.utf8"
 }
 
-resource "kubernetes_secret_v1" "account_db" {
+resource "kubernetes_secret_v1" "bank_db" {
   for_each = var.environments
 
   metadata {
-    name      = "account-service-db"
+    name      = "bank-service-db"
     namespace = each.key
   }
 
