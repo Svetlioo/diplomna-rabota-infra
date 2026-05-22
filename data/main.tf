@@ -8,6 +8,12 @@ resource "random_password" "admin" {
   special = false
 }
 
+resource "random_password" "jwt" {
+  for_each = var.environments
+  length   = 64
+  special  = false
+}
+
 resource "azurerm_postgresql_flexible_server" "main" {
   name                          = var.server_name
   resource_group_name           = azurerm_resource_group.data.name
@@ -53,6 +59,7 @@ resource "kubernetes_secret_v1" "bank_db" {
     SPRING_DATASOURCE_URL      = "jdbc:postgresql://${azurerm_postgresql_flexible_server.main.fqdn}:5432/${each.value.database}?sslmode=require"
     SPRING_DATASOURCE_USERNAME = var.admin_username
     SPRING_DATASOURCE_PASSWORD = random_password.admin.result
+    JWT_SECRET                 = random_password.jwt[each.key].result
   }
 
   type = "Opaque"
