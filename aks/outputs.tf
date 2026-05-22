@@ -8,12 +8,6 @@ output "cluster_name" {
   value       = azurerm_kubernetes_cluster.main.name
 }
 
-output "kube_config" {
-  description = "Raw kubeconfig for the AKS cluster. Sensitive."
-  value       = azurerm_kubernetes_cluster.main.kube_config_raw
-  sensitive   = true
-}
-
 output "host" {
   description = "Kubernetes API server URL."
   value       = azurerm_kubernetes_cluster.main.kube_config[0].host
