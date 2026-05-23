@@ -2,17 +2,20 @@
 
 Provisions Azure Database for PostgreSQL Flexible Server (free tier B1ms — 750 hours/month free for 12 months on the Students plan) plus per-environment databases and Kubernetes secrets.
 
-One shared server hosts three logical databases: `account_dev`, `account_test`, `account_prod`. Each is exposed to its matching Kubernetes namespace via a `Secret` named `account-service-db`.
+One shared server hosts three logical databases: `bank_dev`, `bank_test`, `bank_prod`. Each is exposed to its matching Kubernetes namespace via a `Secret` named `bank-service-db`.
+
+> The `dev/test/prod` namespaces are NOT created here — they are created by the ArgoCD bootstrap
+> (`CreateNamespace=true` in the gitops apps). Apply this module AFTER the bootstrap, otherwise the
+> secrets fail with "namespace not found". See the repo root README for the full ordering.
 
 ## Resources
 
 - `azurerm_resource_group` — `rg-diploma-data`
 - `azurerm_postgresql_flexible_server` — version 17, Burstable B1ms, 32 GB
-- `azurerm_postgresql_flexible_server_database` (×3) — one per environment
+- `azurerm_postgresql_flexible_server_database` (×3) — one per environment (`bank_dev/test/prod`)
 - `azurerm_postgresql_flexible_server_firewall_rule` — allows access from Azure-internal services (AKS outbound)
-- `kubernetes_namespace_v1` (×3) — `dev`, `test`, `prod`
-- `kubernetes_secret_v1` (×3) — `account-service-db` with `SPRING_DATASOURCE_URL` / `USERNAME` / `PASSWORD`
-- `random_password` — generated 32-character admin password (stored only in Terraform state and the Kubernetes secret)
+- `kubernetes_secret_v1` (×3) — `bank-service-db` with `SPRING_DATASOURCE_URL` / `USERNAME` / `PASSWORD` / `JWT_SECRET`
+- `random_password` — admin password (32 chars) + per-env `JWT_SECRET` (64 chars), stored only in Terraform state and the Kubernetes secret
 
 ## State backend
 
