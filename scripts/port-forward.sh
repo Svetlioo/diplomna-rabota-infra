@@ -7,6 +7,10 @@
 # Override ports/namespace if needed: FE_PORT=9000 NS=test ./scripts/port-forward.sh
 set -euo pipefail
 
+# Escape a potentially deleted cwd so child processes (kubectl, pkill, etc.)
+# don't print "shell-init: error retrieving current directory" each call.
+cd "$HOME" 2>/dev/null || cd /
+
 NS="${NS:-dev}"
 FE_PORT="${FE_PORT:-8080}"
 ARGO_PORT="${ARGO_PORT:-8081}"
