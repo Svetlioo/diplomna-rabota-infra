@@ -26,14 +26,18 @@ kubectl port-forward svc/argo-cd-argocd-server -n argocd "${ARGO_PORT}:443" >/de
 
 ARGO_PW="$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || true)"
 
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+
 cat <<EOF
 
   Frontend (${NS})   http://localhost:${FE_PORT}
   ArgoCD             https://localhost:${ARGO_PORT}   (admin / ${ARGO_PW:-see argocd-initial-admin-secret})
 
-  To switch envs: Ctrl-C, then NS=test (or NS=prod) ./scripts/port-forward.sh
-  Clear site cookies between switches (DevTools -> Application -> Cookies)
-  so a stale token from another env does not produce a 401.
+  Switch env (Ctrl-C first, then clear localhost cookies in DevTools):
+
+      NS=test ${SELF}
+      NS=prod ${SELF}
+      NS=dev  ${SELF}
 
   Ctrl-C to stop.
 EOF
