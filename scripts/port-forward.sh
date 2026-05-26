@@ -3,6 +3,10 @@
 # Re-runnable: drops any forwards a previous run left behind.
 #
 #   ./scripts/port-forward.sh
+#
+# Uses *.localhost hostnames so each env has its own cookie jar without
+# touching /etc/hosts. Browsers auto-resolve *.localhost to 127.0.0.1 and
+# treat it as a secure context, so Secure cookies still work over HTTP.
 set -euo pipefail
 
 cd "$HOME" 2>/dev/null || cd /
@@ -27,18 +31,13 @@ ARGO_PW="$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=
 
 cat <<EOF
 
-  Frontend (dev)   http://localhost:${DEV_PORT}
-  Frontend (test)  http://localhost:${TEST_PORT}
-  Frontend (prod)  http://localhost:${PROD_PORT}
+  Frontend (dev)   http://dev.localhost:${DEV_PORT}
+  Frontend (test)  http://test.localhost:${TEST_PORT}
+  Frontend (prod)  http://prod.localhost:${PROD_PORT}
   ArgoCD           https://localhost:${ARGO_PORT}   (admin / ${ARGO_PW:-see argocd-initial-admin-secret})
 
-  All three frontends share the same origin (localhost), so a normal browser
-  treats them as ONE cookie jar. To get three independent logins open each in
-  its own isolated browsing context:
-
-    Safari   - 3 separate Private Windows (each Private Window is isolated)
-    Firefox  - 3 tabs with Multi-Account Containers (dev / test / prod containers)
-    Chrome   - 3 different profiles (incognito tabs all share one session)
+  Open the three URLs in normal tabs of any browser - each is its own cookie
+  jar, so logins in dev/test/prod do not collide.
 
   Ctrl-C to stop.
 EOF
