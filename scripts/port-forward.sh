@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
-# Expose all three frontend environments and the ArgoCD UI locally.
-# Re-runnable: drops any forwards a previous run left behind.
-#
-#   ./scripts/port-forward.sh
-#
-# Uses *.localhost hostnames so each env has its own cookie jar without
-# touching /etc/hosts. Browsers auto-resolve *.localhost to 127.0.0.1 and
-# treat it as a secure context, so Secure cookies still work over HTTP.
+# Port-forward the three frontend envs + ArgoCD UI locally. Re-runnable.
+# *.localhost gives each env its own cookie jar (secure context over HTTP).
 set -euo pipefail
 
 cd "$HOME" 2>/dev/null || cd /

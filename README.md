@@ -124,7 +124,7 @@ kyverno → argocd → data → aks → shared
   ```
 - **Зает storage account name**: `stdiplomarabotastate26` е глобално уникален; ако `apply` на `shared` гръмне с „name in use" след скорошен destroy, изчакай 1-2 мин или вдигни последната цифра в `terraform.tfvars` плюс всички `backend.tf`.
 
-> Бележка: преименуване на DB име в `data/` (напр. `account_*` → `bank_*`) форсира
+> Бележка: преименуване на DB име в `data/` форсира
 > replace на базите и secret-ите, допустима загуба на данни в dev (Flyway пресъздава схемата при старт).
 
 ## Свързани хранилища
