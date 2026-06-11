@@ -13,7 +13,7 @@ Terraform инфраструктура за дипломната ([diplomna-rabo
 | [`data/`](./data) | PostgreSQL Flexible Server, по една база на среда (`bank_dev/test/prod`) и Kubernetes secret `bank-service-db` (DB достъп и `JWT_SECRET`) във всеки namespace. |
 | [`argocd/`](./argocd) | Инсталира ArgoCD чрез Helm (GitOps доставка от `diplomna-rabota-gitops`). |
 | [`kyverno/`](./kyverno) | Инсталира Kyverno чрез Helm (контрол на допускането). |
-| [`scripts/`](./scripts) | `aks-start.sh` / `aks-stop.sh` за пускане и спиране на клъстера (пестене на кредити). |
+| [`scripts/`](./scripts) | `aks-start.sh` / `aks-stop.sh` за пускане и спиране на клъстера (пестене на кредити); `port-forward.sh` за локален достъп до трите frontend среди и ArgoCD UI. |
 
 ## Предпоставки
 
@@ -27,6 +27,7 @@ Terraform инфраструктура за дипломната ([diplomna-rabo
   ```bash
   az provider register --namespace Microsoft.DBforPostgreSQL --wait
   ```
+- Gitleaks hook за тайни (еднократно след клониране): `pre-commit install`
 - `terraform.tfvars` файлове (gitignored; копирай от `*.example` и попълни):
   - `shared/terraform.tfvars`: `subscription_id`, `state_storage_account_name` (глобално уникално)
   - `aks/terraform.tfvars`: `subscription_id`
@@ -110,7 +111,7 @@ kubectl port-forward svc/argo-cd-argocd-server -n argocd 8080:443
 ```
 AKS control plane е безплатен; плаща се node VM-ът и PostgreSQL compute.
 
-## Събаряне (destroy)
+## Destroy
 
 Обратен ред, докато клъстерът е още жив:
 ```
@@ -118,22 +119,10 @@ kyverno → argocd → data → aks → shared
 ```
 Във всеки модул: `terraform destroy`.
 
-Известни капани:
-- **ArgoCD namespace засяда в `Terminating`** (finalizer-и на Application CR-ите
-  без жив контролер). Изчисти ги и пусни destroy отново:
-  ```bash
-  kubectl get applications,appprojects -n argocd -o name \
-    | xargs -r -I{} kubectl patch {} -n argocd --type=merge -p '{"metadata":{"finalizers":null}}'
-  ```
-- **Зает storage account name** след скорошен destroy: изчакай 1-2 мин или вдигни
-  последната цифра в `terraform.tfvars` и всички `backend.tf`.
-- Преименуване на база в `data/` форсира replace на базите и secret-ите
-  (допустима загуба на данни в dev).
-
 ## Свързани хранилища
 
 - **`diplomna-rabota`**: изходен код на услугите и CI/CD.
-- **`diplomna-rabota-gitops`**: желано състояние, което ArgoCD реконсилира.
+- **`diplomna-rabota-gitops`**: желано състояние, което ArgoCD синхронизира.
 
 ## Лиценз
 
