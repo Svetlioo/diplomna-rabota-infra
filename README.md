@@ -102,8 +102,6 @@ kubectl get pods -A
 ./scripts/port-forward.sh
 # dev.localhost:8080, test.localhost:8082, prod.localhost:8083, ArgoCD https://localhost:8081
 ```
-Отделните `*.localhost` адреси дават на всяка среда собствени cookies, така че
-може да си логнат в трите едновременно.
 
 Само ArgoCD UI на ръка:
 ```bash
