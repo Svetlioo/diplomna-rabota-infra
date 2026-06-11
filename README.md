@@ -96,7 +96,7 @@ kubectl get pods -A
 
 ## Локален достъп
 
-`port-forward.sh` вдига наведнъж трите frontend среди и ArgoCD UI и отпечатва
+`port-forward.sh` вдига наведнъж трите frontend среди и ArgoCD UI и показва
 адресите и admin паролата:
 ```bash
 ./scripts/port-forward.sh
