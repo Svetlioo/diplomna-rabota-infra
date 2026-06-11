@@ -94,8 +94,18 @@ kubectl get applications -n argocd
 kubectl get pods -A
 ```
 
-## Достъп до ArgoCD UI
+## Локален достъп
 
+`port-forward.sh` вдига наведнъж трите frontend среди и ArgoCD UI и отпечатва
+адресите и admin паролата:
+```bash
+./scripts/port-forward.sh
+# dev.localhost:8080, test.localhost:8082, prod.localhost:8083, ArgoCD https://localhost:8081
+```
+Отделните `*.localhost` адреси дават на всяка среда собствени cookies, така че
+може да си логнат в трите едновременно.
+
+Само ArgoCD UI на ръка:
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
 kubectl port-forward svc/argo-cd-argocd-server -n argocd 8080:443
@@ -118,6 +128,11 @@ AKS control plane е безплатен; плаща се node VM-ът и Postgre
 kyverno → argocd → data → aks → shared
 ```
 Във всеки модул: `terraform destroy`.
+
+## Настройка на хранилището (еднократно)
+
+- Branch ruleset на `main`: изисква pull request и преминали проверки (Gitleaks,
+  Trivy config); забранен директен push.
 
 ## Свързани хранилища
 
