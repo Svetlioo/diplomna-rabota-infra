@@ -28,7 +28,7 @@ Terraform инфраструктура за дипломната ([diplomna-rabo
 
 ## Предпоставки
 
-- Инсталирани `terraform`, `kubectl`, `az` и `helm`.
+- Инсталирани `terraform`, `kubectl`, `az`, `helm` и `pre-commit`.
 - Активна Azure сесия:
   ```bash
   az login
