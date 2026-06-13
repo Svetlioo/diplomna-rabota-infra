@@ -11,8 +11,8 @@ Terraform инфраструктура за дипломната ([diplomna-rabo
 ├── shared/    Resource group и storage account за remote state
 ├── aks/       AKS клъстер с един node pool
 ├── data/      PostgreSQL Flexible Server и secret за всяка среда
-├── argocd/    Инсталация на ArgoCD (Helm)
-└── kyverno/   Инсталация на Kyverno (Helm)
+├── argocd/    Инсталация на ArgoCD в клъстера (Helm)
+└── kyverno/   Инсталация на Kyverno в клъстера (Helm)
 ```
 
 ## Модули
@@ -21,10 +21,10 @@ Terraform инфраструктура за дипломната ([diplomna-rabo
 |---|---|
 | [`shared/`](./shared) | Resource group и storage account за remote state на останалите модули. Собственото му състояние се пази локално. |
 | [`aks/`](./aks) | AKS клъстер с един node pool (`Standard_B2s_v2`). |
-| [`data/`](./data) | PostgreSQL Flexible Server с отделна база за всяка среда (`bank_dev/test/prod`) и Kubernetes secret `bank-service-db` за достъп до базата и `JWT_SECRET` във всеки namespace. |
-| [`argocd/`](./argocd) | Инсталира ArgoCD чрез Helm за GitOps доставка от `diplomna-rabota-gitops`. |
-| [`kyverno/`](./kyverno) | Инсталира Kyverno чрез Helm за контрол на допускането. |
-| [`scripts/`](./scripts) | `aks-start.sh` и `aks-stop.sh` пускат и спират клъстера за пестене на кредити, а `port-forward.sh` дава локален достъп до трите frontend среди и ArgoCD UI. |
+| [`data/`](./data) | PostgreSQL Flexible Server с отделна база за всяка среда (`bank_dev`, `bank_test`, `bank_prod`) и Kubernetes secret `bank-service-db` за достъп до базата и `JWT_SECRET` във всеки namespace. |
+| [`argocd/`](./argocd) | Инсталира ArgoCD в клъстера чрез Helm за GitOps доставка от `diplomna-rabota-gitops`. |
+| [`kyverno/`](./kyverno) | Инсталира Kyverno в клъстера чрез Helm за контрол на допускането. |
+| [`scripts/`](./scripts) | Скриптовете `aks-start.sh` и `aks-stop.sh` пускат и спират клъстера за минимизиране на разходите, а `port-forward.sh` дава локален достъп до трите frontend среди и ArgoCD UI. |
 
 ## Предпоставки
 
@@ -60,7 +60,7 @@ cd shared && terraform init && terraform apply
 cd ../aks && terraform init && terraform apply
 ```
 
-**3. kubeconfig**:
+**3. kubeconfig** (за да може `kubectl` да работи с новия клъстер):
 ```bash
 az aks get-credentials --resource-group rg-diploma-aks --name aks-diploma --overwrite-existing
 ```
@@ -70,7 +70,7 @@ az aks get-credentials --resource-group rg-diploma-aks --name aks-diploma --over
 cd ../argocd && terraform init && terraform apply
 ```
 
-**5. kyverno** (преди bootstrap, защото политиките зависят от CRD на Kyverno):
+**5. kyverno** (преди bootstrap, защото политиките изискват Kyverno да е инсталиран):
 ```bash
 cd ../kyverno && terraform init && terraform apply
 ```
@@ -98,8 +98,8 @@ kubectl get pods -A
 
 ## Локален достъп
 
-`port-forward.sh` вдига наведнъж трите frontend среди и ArgoCD UI и показва
-адресите и admin паролата:
+Скриптът `port-forward.sh` вдига наведнъж трите frontend среди и ArgoCD UI и
+показва адресите и admin паролата:
 ```bash
 ./scripts/port-forward.sh
 # dev.localhost:8080, test.localhost:8082, prod.localhost:8083, ArgoCD https://localhost:8081
