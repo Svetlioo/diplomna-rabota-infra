@@ -38,7 +38,6 @@ Terraform инфраструктура за дипломната ([diplomna-rabo
   ```bash
   az provider register --namespace Microsoft.DBforPostgreSQL --wait
   ```
-- Gitleaks hook за тайни се активира еднократно след клониране с `pre-commit install`.
 - Файлове `terraform.tfvars` (локални, не се качват в git; копират се от `*.example`).
   Всеки модул иска `subscription_id`; `shared` иска и `state_storage_account_name`,
   а `data` иска и `server_name` (двете глобално уникални).
@@ -133,6 +132,8 @@ kyverno → argocd → data → aks → shared
 
 - Branch ruleset на `main` изисква pull request и преминали проверки (Gitleaks,
   Trivy config) и забранява директен push.
+- Gitleaks hook за тайни се активира еднократно след клониране с
+  `pre-commit install` (ако още не е инсталиран).
 
 ## Свързани хранилища
 
