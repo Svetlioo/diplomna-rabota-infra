@@ -12,8 +12,7 @@ Terraform инфраструктура за дипломната ([diplomna-rabo
 ├── aks/       AKS клъстер с един node pool
 ├── data/      PostgreSQL Flexible Server и secret за всяка среда
 ├── argocd/    Инсталация на ArgoCD (Helm)
-├── kyverno/   Инсталация на Kyverno (Helm)
-└── scripts/   Пускане, спиране и локален достъп до клъстера
+└── kyverno/   Инсталация на Kyverno (Helm)
 ```
 
 ## Модули
