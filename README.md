@@ -28,7 +28,7 @@ Terraform инфраструктура за дипломната ([diplomna-rabo
   az provider register --namespace Microsoft.DBforPostgreSQL --wait
   ```
 - Gitleaks hook за тайни (еднократно след клониране): `pre-commit install`
-- `terraform.tfvars` файлове (gitignored; копирай от `*.example` и попълни):
+- `terraform.tfvars` файлове (локални, не се качват в git; копирай от `*.example` и попълни):
   - `shared/terraform.tfvars`: `subscription_id`, `state_storage_account_name` (глобално уникално)
   - `aks/terraform.tfvars`: `subscription_id`
   - `data/terraform.tfvars`: `subscription_id`, `server_name` (глобално уникално)
