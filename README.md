@@ -2,7 +2,7 @@
 
 Terraform инфраструктура за дипломната ([diplomna-rabota](https://github.com/Svetlioo/diplomna-rabota)).
 Описва декларативно Azure ресурсите за проекта: споделена основа, AKS клъстер,
-база данни и контролерите в клъстера (ArgoCD, Kyverno).
+база данни и компонентите в клъстера (ArgoCD, Kyverno).
 
 ## Структура
 
