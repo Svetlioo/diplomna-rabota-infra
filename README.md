@@ -1,24 +1,36 @@
 # diplomna-rabota-infra
 
 Terraform инфраструктура за дипломната ([diplomna-rabota](https://github.com/Svetlioo/diplomna-rabota)).
-Описва декларативно Azure ресурсите: споделена основа, AKS клъстер, база данни и
-контролерите в клъстера (ArgoCD, Kyverno).
+Описва декларативно Azure ресурсите за проекта: споделена основа, AKS клъстер,
+база данни и контролерите в клъстера (ArgoCD, Kyverno).
+
+## Структура
+
+```
+.
+├── shared/    Resource group и storage account за remote state
+├── aks/       AKS клъстер с един node pool
+├── data/      PostgreSQL Flexible Server и secret за всяка среда
+├── argocd/    Инсталация на ArgoCD (Helm)
+├── kyverno/   Инсталация на Kyverno (Helm)
+└── scripts/   Пускане, спиране и локален достъп до клъстера
+```
 
 ## Модули
 
 | Модул | Предназначение |
 |---|---|
-| [`shared/`](./shared) | Resource group и storage account за remote state на останалите модули. Собственият му state остава локален. |
-| [`aks/`](./aks) | AKS клъстер с един node pool (`Standard_B2s_v2`), SystemAssigned identity. |
-| [`data/`](./data) | PostgreSQL Flexible Server, по една база на среда (`bank_dev/test/prod`) и Kubernetes secret `bank-service-db` (DB достъп и `JWT_SECRET`) във всеки namespace. |
-| [`argocd/`](./argocd) | Инсталира ArgoCD чрез Helm (GitOps доставка от `diplomna-rabota-gitops`). |
-| [`kyverno/`](./kyverno) | Инсталира Kyverno чрез Helm (контрол на допускането). |
-| [`scripts/`](./scripts) | `aks-start.sh` / `aks-stop.sh` за пускане и спиране на клъстера (пестене на кредити); `port-forward.sh` за локален достъп до трите frontend среди и ArgoCD UI. |
+| [`shared/`](./shared) | Resource group и storage account за remote state на останалите модули. Собственото му състояние се пази локално. |
+| [`aks/`](./aks) | AKS клъстер с един node pool (`Standard_B2s_v2`). |
+| [`data/`](./data) | PostgreSQL Flexible Server с отделна база за всяка среда (`bank_dev/test/prod`) и Kubernetes secret `bank-service-db` за достъп до базата и `JWT_SECRET` във всеки namespace. |
+| [`argocd/`](./argocd) | Инсталира ArgoCD чрез Helm за GitOps доставка от `diplomna-rabota-gitops`. |
+| [`kyverno/`](./kyverno) | Инсталира Kyverno чрез Helm за контрол на допускането. |
+| [`scripts/`](./scripts) | `aks-start.sh` и `aks-stop.sh` пускат и спират клъстера за пестене на кредити, а `port-forward.sh` дава локален достъп до трите frontend среди и ArgoCD UI. |
 
 ## Предпоставки
 
-- Инсталирани `terraform`, `kubectl`, `az`, `helm`.
-- Логнат Azure акаунт:
+- Инсталирани `terraform`, `kubectl`, `az` и `helm`.
+- Активна Azure сесия:
   ```bash
   az login
   az account set --subscription <SUBSCRIPTION_ID>
@@ -27,24 +39,24 @@ Terraform инфраструктура за дипломната ([diplomna-rabo
   ```bash
   az provider register --namespace Microsoft.DBforPostgreSQL --wait
   ```
-- Gitleaks hook за тайни (еднократно след клониране): `pre-commit install`
-- `terraform.tfvars` файлове (локални, не се качват в git; копирай от `*.example` и попълни):
-  - `shared/terraform.tfvars`: `subscription_id`, `state_storage_account_name` (глобално уникално)
-  - `aks/terraform.tfvars`: `subscription_id`
-  - `data/terraform.tfvars`: `subscription_id`, `server_name` (глобално уникално)
+- Gitleaks hook за тайни се активира еднократно след клониране с `pre-commit install`.
+- Файлове `terraform.tfvars` (локални, не се качват в git; копират се от `*.example`).
+  Всеки модул иска `subscription_id`; `shared` иска и `state_storage_account_name`,
+  а `data` иска и `server_name` (двете глобално уникални).
 
 ## Пускане от нула
 
-Редът е важен: namespace-ите `dev/test/prod` се създават от ArgoCD bootstrap-а, а
-secret-ът от модула `data`. Затова `data` се прилага СЛЕД bootstrap, иначе гърми
-с "namespace not found".
+Редът има значение. Трите namespace `dev`, `test` и `prod` се създават при
+bootstrap на ArgoCD, а secret с достъпа до базата идва от модула `data`. Затова
+`data` се прилага след bootstrap, иначе прилагането пропада с грешката
+"namespace not found".
 
-**1. shared** (локален state, създава storage account-а за останалите):
+**1. shared** (локално състояние; създава storage account за останалите модули):
 ```bash
 cd shared && terraform init && terraform apply
 ```
 
-**2. aks** (самият клъстер, 5-7 мин):
+**2. aks** (самият клъстер):
 ```bash
 cd ../aks && terraform init && terraform apply
 ```
@@ -59,36 +71,27 @@ az aks get-credentials --resource-group rg-diploma-aks --name aks-diploma --over
 cd ../argocd && terraform init && terraform apply
 ```
 
-**5. kyverno** (преди bootstrap, защото политиките искат Kyverno CRD-тата):
+**5. kyverno** (преди bootstrap, защото политиките зависят от CRD на Kyverno):
 ```bash
 cd ../kyverno && terraform init && terraform apply
 ```
 
-**6. bootstrap** от gitops хранилището (root app-of-apps + AppProject; ArgoCD
-създава namespace-ите и започва да внедрява):
+**6. bootstrap** от gitops хранилището (зарежда root app-of-apps и AppProject;
+ArgoCD създава трите namespace и започва внедряването):
 ```bash
 cd ../../diplomna-rabota-gitops
 kubectl apply -f bootstrap/
 kubectl get ns dev test prod
 ```
-Pod-овете ще са в `CreateContainerConfigError` до следващата стъпка (липсва DB
-secret). Нормално е.
 
-**7. data** (база, бази по среда, secrets в трите namespace-а):
+**7. data** (база, отделни бази по среда и secret в трите namespace):
 ```bash
 cd ../diplomna-rabota-infra/data && terraform init && terraform apply
 ```
-DB паролата и `JWT_SECRET` се генерират наново при всяко пресъздаване; старите
-JWT токени стават невалидни.
+Паролата за базата и `JWT_SECRET` се генерират наново при всяко пресъздаване;
+старите JWT токени стават невалидни.
 
-**8. рестарт на pod-овете** (по-бързо от изчакване):
-```bash
-kubectl rollout restart deployment -n dev
-kubectl rollout restart deployment -n test
-kubectl rollout restart deployment -n prod
-```
-
-**9. проверка**:
+**8. проверка**:
 ```bash
 kubectl get applications -n argocd
 kubectl get pods -A
@@ -103,7 +106,7 @@ kubectl get pods -A
 # dev.localhost:8080, test.localhost:8082, prod.localhost:8083, ArgoCD https://localhost:8081
 ```
 
-Само ArgoCD UI на ръка:
+Достъп само до ArgoCD UI:
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
 kubectl port-forward svc/argo-cd-argocd-server -n argocd 8080:443
@@ -112,12 +115,12 @@ kubectl port-forward svc/argo-cd-argocd-server -n argocd 8080:443
 
 ## Спиране и пускане
 
-Не е нужно разрушаване; спира се само compute-ът, данните остават:
+Скриптовете спират и пускат клъстера, за да се ограничат разходите, без да се
+трият ресурси; данните остават:
 ```bash
 ./scripts/aks-stop.sh
 ./scripts/aks-start.sh
 ```
-AKS control plane е безплатен; плаща се node VM-ът и PostgreSQL compute.
 
 ## Destroy
 
@@ -125,17 +128,17 @@ AKS control plane е безплатен; плаща се node VM-ът и Postgre
 ```
 kyverno → argocd → data → aks → shared
 ```
-Във всеки модул: `terraform destroy`.
+Във всеки модул се изпълнява `terraform destroy`.
 
 ## Настройка на хранилището (еднократно)
 
-- Branch ruleset на `main`: изисква pull request и преминали проверки (Gitleaks,
-  Trivy config); забранен директен push.
+- Branch ruleset на `main` изисква pull request и преминали проверки (Gitleaks,
+  Trivy config) и забранява директен push.
 
 ## Свързани хранилища
 
-- **`diplomna-rabota`**: изходен код на услугите и CI/CD.
-- **`diplomna-rabota-gitops`**: желано състояние, което ArgoCD синхронизира.
+- **`diplomna-rabota`** съдържа изходния код на услугите и CI/CD.
+- **`diplomna-rabota-gitops`** пази желаното състояние, което ArgoCD синхронизира.
 
 ## Лиценз
 
